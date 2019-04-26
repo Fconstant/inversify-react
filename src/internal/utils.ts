@@ -175,6 +175,7 @@ function getContainer<P>(target: Component<P, any>) {
 
 interface PropertyOptions {
 	isOptional?: boolean;
+    named?: string | number | symbol;
 	defaultValue?: any;
 }
 
@@ -189,17 +190,25 @@ function createProperty<P>(target: Component<P, any>, name: string, type: interf
 				const container = getContainer(this);
 
 				let value: any;
+                const resolve = () => {
+                    if (options.named) {
+                        return getContainer(this).getNamed(type, options.named)
+                    } else {
+                        return getContainer(this).get(type)
+                    }
+                }
+
 				if (options.isOptional)
 				{
 					if (container.isBound(type)) {
-						value = getContainer(this).get(type);
+						value = resolve()
 					} else {
 						value = options.defaultValue;
 					}
 				}
 				else
 				{
-					value = getContainer(this).get(type);
+					value = resolve()
 				}
 
 				getter = administration.properties[name] = () => value;
@@ -221,7 +230,7 @@ export {
 	ServiceDescriptor,
 	DiClassAdministration, DiInstanceAdministration,
 	ensureAcceptContext,
-	ensureProvideContext, 
+	ensureProvideContext,
 	getContainer, createProperty, PropertyOptions,
-	getClassAdministration, getInstanceAdministration, 
+	getClassAdministration, getInstanceAdministration,
 };

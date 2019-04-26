@@ -3,14 +3,14 @@ import { ensureAcceptContext, createProperty, PropertyOptions } from './internal
 import * as React from 'react';
 
 interface ResolveDecorator {
-	(serviceIdentifier: interfaces.ServiceIdentifier<any>): (target: any, name: string, descriptor?: any) => any;
+	(serviceIdentifier: interfaces.ServiceIdentifier<any>, named?: string | symbol | number): (target: any, name: string, descriptor?: any) => any;
 	(target: any, name: string, descriptor?: any): any
 
 	optional: ResolveOptionalDecorator;
 }
 
 interface ResolveOptionalDecorator {
-	<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, defaultValue?: T): (target: any, name: string, descriptor?: any) => any;
+	<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, defaultValue?: T, named?: string | symbol | number): (target: any, name: string, descriptor?: any) => any;
 	(target: any, name: string, descriptor?: any): any;
 }
 
@@ -45,20 +45,21 @@ const resolve = <ResolveDecorator>function resolve(target: any, name: string, de
 		return applyResolveDecorator(target, name, type, {});
 	} else {
 		const serviceIdentifier = target as interfaces.ServiceIdentifier<any>;
+        const named = name as string | symbol | number
 		if (!serviceIdentifier) {
 			throw new Error('Invalid property type.');
 		}
 
 		// factory
 		return function(target: any, name: string, descriptor?: any) {
-			return applyResolveDecorator(target, name, serviceIdentifier, {});
+			return applyResolveDecorator(target, name, serviceIdentifier, { named });
 		};
 	}
 };
 
 resolve.optional = <ResolveOptionalDecorator>function resolveOptional<T>(...args: unknown[]) {
 	if (typeof args[1] === 'string' && args.length === 3) {
-		const [target, name, descriptor] = args;	
+		const [target, name, descriptor] = args;
 		const type = getDesignType(target, name);
 
 		// decorator
@@ -66,10 +67,11 @@ resolve.optional = <ResolveOptionalDecorator>function resolveOptional<T>(...args
 	} else {
 		const serviceIdentifier = args[0] as interfaces.ServiceIdentifier<T>;
 		const defaultValue = args[1] as T | undefined;
+        const named = args[2] as string | symbol | number
 
 		// factory
 		return function(target: any, name: string, descriptor?: any) {
-			return applyResolveDecorator(target, name, serviceIdentifier, { isOptional: true, defaultValue });
+			return applyResolveDecorator(target, name, serviceIdentifier, { isOptional: true, defaultValue, named });
 		};
 	}
 }
